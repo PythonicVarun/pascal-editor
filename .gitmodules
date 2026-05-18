@@ -1,0 +1,3 @@
+[submodule "services/agent-runner"]
+	path = services/agent-runner
+	url = https://github.com/PythonicVarun/remote-coding-agents.git
