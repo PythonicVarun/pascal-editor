@@ -1,8 +1,17 @@
 import type { NextConfig } from 'next'
 
+const AGENT_RUNNER_URL = process.env.AGENT_RUNNER_URL ?? 'http://localhost:4000'
+
 const nextConfig: NextConfig = {
   logging: {
     browserToTerminal: true,
+  },
+  async rewrites() {
+    return [
+      { source: '/agent-runner/api/:path*', destination: `${AGENT_RUNNER_URL}/api/:path*` },
+      { source: '/agent-runner/socket.io/:path*', destination: `${AGENT_RUNNER_URL}/socket.io/:path*` },
+      { source: '/agent-runner/ttyd/:path*', destination: `${AGENT_RUNNER_URL}/ttyd/:path*` },
+    ]
   },
   typescript: {
     ignoreBuildErrors: true,
