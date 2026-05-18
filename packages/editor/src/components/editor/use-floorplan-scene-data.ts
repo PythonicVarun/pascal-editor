@@ -147,7 +147,7 @@ export function useFloorplanSceneData({
         .filter((node): node is WallNode => node?.type === 'wall')
 
       return nextWalls.flatMap((wall) =>
-        wall.children
+        (wall.children || [])
           .map((childId) => state.nodes[childId])
           .filter((node): node is OpeningNode => node?.type === 'window' || node?.type === 'door'),
       )

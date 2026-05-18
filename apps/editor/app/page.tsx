@@ -47,6 +47,12 @@ export default function Home() {
             <span aria-hidden className="text-muted-foreground">
               ·
             </span>
+            <Link className="font-medium text-foreground hover:underline" href="/agent">
+              Agent Mode
+            </Link>
+            <span aria-hidden className="text-muted-foreground">
+              ·
+            </span>
             <Link className="font-medium text-foreground hover:underline" href="/scenes">
               Create new
             </Link>
