@@ -132,8 +132,8 @@ export const StairSystem = () => {
           updateMergedStairGeometry(node as StairNode, group, nodes)
           stairsProcessed++
         }
+        pendingStairUpdates.delete(id)
       }
-      pendingStairUpdates.delete(id)
     }
   }, 5)
 

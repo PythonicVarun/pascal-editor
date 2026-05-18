@@ -134,8 +134,8 @@ export const RoofSystem = () => {
           updateMergedRoofGeometry(node as RoofNode, group, nodes)
           roofsProcessed++
         }
+        pendingRoofUpdates.delete(id)
       }
-      pendingRoofUpdates.delete(id)
     }
   }, 5) // Priority 5: run after all other systems have settled
 
