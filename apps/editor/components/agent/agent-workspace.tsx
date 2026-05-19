@@ -9,7 +9,7 @@ import {
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { ArrowLeft, GripVertical, Layers } from 'lucide-react'
+import { ArrowLeft, FileCode, GripVertical, Terminal as TerminalIcon } from 'lucide-react'
 import { Group, Panel, Separator } from 'react-resizable-panels'
 import {
   CommunityViewerToolbarLeft,
@@ -17,9 +17,14 @@ import {
 } from '@/components/viewer-toolbar'
 import type { SceneMeta } from '@/components/scene-loader'
 import { ensurePascalProject, type Project } from '@/lib/agent-runner-client'
+import { cn } from '@/lib/utils'
 import { SessionsPanel } from './sessions-panel'
 import { ChatPanel } from './chat-panel'
 import { TerminalFrame } from './terminal-frame'
+import { FileTree } from './file-tree'
+import { CodeEditor } from './code-editor'
+
+type MiddleTab = 'terminal' | 'code'
 
 const SIDEBAR_TABS: (SidebarTab & { component: React.ComponentType })[] = [
   { id: 'site', label: 'Scene', component: () => null },
@@ -61,6 +66,8 @@ export function AgentWorkspace({ initialScene, meta }: Props) {
   const [project, setProject] = useState<Project | null>(null)
   const [projectError, setProjectError] = useState<string | null>(null)
   const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null)
+  const [middleTab, setMiddleTab] = useState<MiddleTab>('terminal')
+  const [openFilePath, setOpenFilePath] = useState<string | null>(null)
 
   const handleLoad = useCallback(async () => initialScene, [initialScene])
 
@@ -222,10 +229,49 @@ export function AgentWorkspace({ initialScene, meta }: Props) {
 
         <PanelSeparator />
 
-        {/* MIDDLE: Embedded terminal */}
+        {/* MIDDLE: Terminal / Code tabs */}
         <Panel defaultSize={38} minSize={24}>
-          <div className="h-full w-full bg-background">
-            <TerminalFrame projectId={project?.id ?? ''} sessionId={selectedSessionId} />
+          <div className="flex h-full w-full flex-col bg-background">
+            <div className="flex items-center gap-px border-border border-b bg-muted/30 px-2 py-1">
+              <TabButton
+                active={middleTab === 'terminal'}
+                onClick={() => setMiddleTab('terminal')}
+                icon={<TerminalIcon className="h-3 w-3" />}
+                label="Terminal"
+              />
+              <TabButton
+                active={middleTab === 'code'}
+                onClick={() => setMiddleTab('code')}
+                icon={<FileCode className="h-3 w-3" />}
+                label="Code"
+              />
+            </div>
+            <div className="min-h-0 flex-1">
+              {middleTab === 'terminal' ? (
+                <TerminalFrame
+                  projectId={project?.id ?? ''}
+                  sessionId={selectedSessionId}
+                />
+              ) : project ? (
+                <Group orientation="horizontal" className="h-full w-full">
+                  <Panel defaultSize={30} minSize={15}>
+                    <FileTree
+                      projectId={project.id}
+                      selectedPath={openFilePath}
+                      onSelect={setOpenFilePath}
+                    />
+                  </Panel>
+                  <Separator className="w-px bg-border" />
+                  <Panel defaultSize={70} minSize={30}>
+                    <CodeEditor projectId={project.id} path={openFilePath} />
+                  </Panel>
+                </Group>
+              ) : (
+                <div className="flex h-full items-center justify-center text-muted-foreground text-xs">
+                  Connecting to agent runner…
+                </div>
+              )}
+            </div>
           </div>
         </Panel>
 
@@ -255,5 +301,33 @@ function PanelSeparator() {
         <GripVertical className="h-3 w-3 scale-0 text-muted-foreground transition-transform group-hover:scale-100" />
       </div>
     </Separator>
+  )
+}
+
+function TabButton({
+  active,
+  onClick,
+  icon,
+  label,
+}: {
+  active: boolean
+  onClick: () => void
+  icon: React.ReactNode
+  label: string
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(
+        'flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium transition-colors',
+        active
+          ? 'bg-background text-foreground shadow-sm'
+          : 'text-muted-foreground hover:bg-background/40 hover:text-foreground',
+      )}
+    >
+      {icon}
+      {label}
+    </button>
   )
 }
