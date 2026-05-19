@@ -17,6 +17,11 @@ COPY pascal-entrypoint.sh /usr/local/bin/pascal-entrypoint.sh
 COPY setup-pascal-mcp.sh  /usr/local/bin/setup-pascal-mcp.sh
 RUN chmod +x /usr/local/bin/pascal-entrypoint.sh /usr/local/bin/setup-pascal-mcp.sh
 
+# Pre-create the SQLite bind-mount target so the entrypoint doesn't have to
+# escalate to mkdir it at boot under the unprivileged agent user. The runtime
+# bind mount overlays this with the host's Pascal data dir.
+RUN mkdir -p /pascal-data && chown agent:agent /pascal-data
+
 # Drop back to the non-root agent user the base image set up.
 USER agent
 

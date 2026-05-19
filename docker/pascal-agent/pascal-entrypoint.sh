@@ -4,7 +4,7 @@
 # original entrypoint so tmux / ttyd / agent-supervisor come up unchanged.
 set -euo pipefail
 
-mkdir -p "${PASCAL_DATA_DIR:-/pascal-data}"
+mkdir -p "${PASCAL_DATA_DIR:-/pascal-data}" 2>/dev/null || true
 
 /usr/local/bin/setup-pascal-mcp.sh
 
