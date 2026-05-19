@@ -6,6 +6,7 @@ import {
   type SceneGraph,
   type SidebarTab,
 } from '@pascal-app/editor'
+import { captureViewer, type ViewPreset } from '@pascal-app/viewer'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useCallback, useEffect, useRef, useState } from 'react'
@@ -153,6 +154,42 @@ export function AgentWorkspace({ initialScene, meta }: Props) {
       applySceneGraphToEditor(payload.graph)
       setConflict(false)
       setSaveError(null)
+    })
+    source.addEventListener('capture-request', (event) => {
+      let payload: { captureId?: string; view?: ViewPreset }
+      try {
+        payload = JSON.parse((event as MessageEvent<string>).data) as typeof payload
+      } catch {
+        return
+      }
+      const captureId = payload.captureId
+      const view = payload.view ?? 'current'
+      if (!captureId) return
+      void (async () => {
+        try {
+          const blob = await captureViewer(view)
+          const res = await fetch(`/api/scenes/${meta.id}/capture/${captureId}`, {
+            method: 'PUT',
+            headers: { 'content-type': 'image/png' },
+            body: blob,
+          })
+          if (!res.ok && res.status !== 410) {
+            console.warn('[agent-workspace] capture upload failed', res.status)
+          }
+        } catch (err) {
+          // Tell the server so the awaiting MCP fetch fails fast instead of
+          // hitting the 10s timeout.
+          const message = err instanceof Error ? err.message : 'capture_failed'
+          try {
+            await fetch(`/api/scenes/${meta.id}/capture/${captureId}`, {
+              method: 'PUT',
+              headers: { 'x-pascal-capture-error': message },
+            })
+          } catch {
+            // Swallow — the server will time out on its own.
+          }
+        }
+      })()
     })
     source.addEventListener('error', () => {
       if (source.readyState === EventSource.CLOSED) {

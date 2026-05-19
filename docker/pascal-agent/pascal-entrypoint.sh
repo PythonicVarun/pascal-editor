@@ -19,6 +19,11 @@ Active scene id: \`${PASCAL_SCENE_ID}\`
 Before mutating, call \`pascal.load_scene\` with id \`${PASCAL_SCENE_ID}\`.
 Mutations land in the SQLite store at \`${PASCAL_DATA_DIR:-/pascal-data}/pascal.db\`
 and stream live to the user's 3D viewer via SSE.
+
+After any mutation, call \`pascal.capture_viewer\` with \`view\` ∈
+\`current|top|front|iso|perspective\` to see a PNG of what the user is
+currently looking at — use it to verify placement, scale, and orientation
+visually before continuing.
 EOF
 fi
 

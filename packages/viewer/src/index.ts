@@ -1,4 +1,5 @@
 export { default as Viewer } from './components/viewer'
+export { captureViewer, isViewerMounted, type ViewPreset } from './lib/capture-bridge'
 export type { HoverStyle, HoverStyles } from './components/viewer/post-processing'
 export {
   DEFAULT_HOVER_STYLES,

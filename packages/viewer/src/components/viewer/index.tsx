@@ -26,6 +26,7 @@ import { WindowSystem } from '../../systems/window/window-system'
 import { ZoneSystem } from '../../systems/zone/zone-system'
 import { ErrorBoundary } from '../error-boundary'
 import { SceneRenderer } from '../renderers/scene-renderer'
+import { CaptureMount } from './capture-mount'
 import FrameLimiter from './frame-limiter'
 import { Lights } from './lights'
 import { PerfMonitor } from './perf-monitor'
@@ -249,6 +250,7 @@ const Viewer: React.FC<ViewerProps> = ({
         <ItemLightSystem />
         {selectionManager === 'default' && <SelectionManager />}
         {(perf || PERF_OVERLAY_ENABLED) && <PerfMonitor />}
+        <CaptureMount />
         {children}
       </ErrorBoundary>
     </Canvas>

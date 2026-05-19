@@ -160,6 +160,11 @@ export function buildPascalSessionInput(args: {
   const containerEnv: Record<string, string> = {
     PASCAL_SCENE_ID: args.sceneId,
     PASCAL_DATA_DIR: '/pascal-data',
+    // capture_viewer in the container calls back into the editor. Default
+    // works on Codespaces and Docker Desktop; override via NEXT_PUBLIC_*
+    // for bare-Linux Docker behind a non-standard hostname.
+    PASCAL_EDITOR_URL:
+      process.env.NEXT_PUBLIC_PASCAL_EDITOR_URL?.trim() || 'http://host.docker.internal:3000',
   }
   const extraMounts =
     PASCAL_DATA_DIR_HOST.length > 0

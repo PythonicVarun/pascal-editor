@@ -1,6 +1,7 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import type { SceneOperations } from '../operations'
 import { registerApplyPatch } from './apply-patch'
+import { registerCaptureViewer } from './capture-viewer'
 import { registerCheckCollisions } from './check-collisions'
 import { registerConstructionTools } from './construction-tools'
 import { registerCreateLevel } from './create-level'
@@ -58,6 +59,7 @@ export function registerTools(server: McpServer, operations: SceneOperations): v
   registerExportGlb(server, operations)
   registerValidateScene(server, operations)
   registerCheckCollisions(server, operations)
+  registerCaptureViewer(server)
   registerTemplateTools(server, operations)
   if (operations.hasStore) {
     registerSceneLifecycleTools(server, operations)

@@ -1,3 +1,4 @@
+import { subscribe as subscribeCapture } from '@/lib/capture-bus'
 import {
   guardSceneApiRequest,
   sceneApiJson,
@@ -49,6 +50,8 @@ export async function GET(request: Request, { params }: RouteParams) {
   let pollTimer: ReturnType<typeof setTimeout> | undefined
   let heartbeatTimer: ReturnType<typeof setInterval> | undefined
 
+  let unsubscribeCapture: (() => void) | undefined
+
   const stream = new ReadableStream<Uint8Array>({
     start(controller) {
       const enqueue = (chunk: string) => {
@@ -60,6 +63,7 @@ export async function GET(request: Request, { params }: RouteParams) {
         closed = true
         if (pollTimer) clearTimeout(pollTimer)
         if (heartbeatTimer) clearInterval(heartbeatTimer)
+        if (unsubscribeCapture) unsubscribeCapture()
         try {
           controller.close()
         } catch {
@@ -69,6 +73,14 @@ export async function GET(request: Request, { params }: RouteParams) {
 
       request.signal.addEventListener('abort', close, { once: true })
       enqueue('retry: 1000\n\n')
+
+      // Capture-request fan-out: the /capture POST handler broadcasts onto
+      // the bus, every open SSE stream for this scene relays it to the
+      // browser, and whichever browser tab uploads first wins.
+      unsubscribeCapture = subscribeCapture(id, (req) => {
+        enqueue('event: capture-request\n')
+        enqueue(`data: ${JSON.stringify(req)}\n\n`)
+      })
 
       const poll = async () => {
         if (closed) return
@@ -99,6 +111,7 @@ export async function GET(request: Request, { params }: RouteParams) {
       closed = true
       if (pollTimer) clearTimeout(pollTimer)
       if (heartbeatTimer) clearInterval(heartbeatTimer)
+      if (unsubscribeCapture) unsubscribeCapture()
     },
   })
 

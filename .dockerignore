@@ -1,0 +1,7 @@
+# Build context for docker/pascal-agent is the repo root. The MCP tarball
+# is produced on the host before docker build runs, so we only need the
+# tarball plus the Dockerfile sidecar scripts.
+*
+
+!out/pascal-app-mcp.tgz
+!docker/pascal-agent

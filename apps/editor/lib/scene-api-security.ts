@@ -1,5 +1,6 @@
 import { timingSafeEqual } from 'node:crypto'
 import { NextResponse } from 'next/server'
+import { getAgentToken } from './agent-token'
 
 const DEFAULT_RATE_LIMIT_PER_MINUTE = 120
 const WINDOW_MS = 60_000
@@ -63,14 +64,20 @@ function validateOrigin(request: Request): NextResponse | null {
 }
 
 function validateAuth(request: Request): NextResponse | null {
-  const token = process.env.PASCAL_SCENE_API_TOKEN
-  if (!token) {
+  const supplied = bearerToken(request) ?? request.headers.get('x-pascal-scene-token')
+  const configured = process.env.PASCAL_SCENE_API_TOKEN
+  if (configured && supplied && safeEqual(supplied, configured)) return null
+
+  // Per-install agent token from ${PASCAL_DATA_DIR}/agent.token. Lets the
+  // pascal-mcp running in a Docker container reach /api/scenes/* over
+  // host.docker.internal without exposing PASCAL_SCENE_API_TOKEN.
+  const agentToken = getAgentToken()
+  if (agentToken && supplied && safeEqual(supplied, agentToken)) return null
+
+  if (!configured) {
     if (isLoopbackRequest(request)) return null
     return sceneApiJson(request, { error: 'scene_api_token_required' }, { status: 503 })
   }
-
-  const supplied = bearerToken(request) ?? request.headers.get('x-pascal-scene-token')
-  if (supplied && safeEqual(supplied, token)) return null
   return sceneApiJson(request, { error: 'unauthorized' }, { status: 401 })
 }
 
