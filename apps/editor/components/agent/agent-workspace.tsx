@@ -65,9 +65,35 @@ export function AgentWorkspace({ initialScene, meta }: Props) {
   const [saveError, setSaveError] = useState<string | null>(null)
   const [project, setProject] = useState<Project | null>(null)
   const [projectError, setProjectError] = useState<string | null>(null)
-  const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null)
+  // Persist session selection per scene so reloads land back on the same
+  // session. Restore lazily in the useState initializer to beat the
+  // sessions-panel auto-select race.
+  const sessionStorageKey = `pascal:agent:${meta.id}:session`
+  const [selectedSessionId, setSelectedSessionIdState] = useState<string | null>(
+    () => {
+      if (typeof window === 'undefined') return null
+      try {
+        return window.localStorage.getItem(sessionStorageKey)
+      } catch {
+        return null
+      }
+    },
+  )
   const [middleTab, setMiddleTab] = useState<MiddleTab>('terminal')
   const [openFilePath, setOpenFilePath] = useState<string | null>(null)
+
+  const setSelectedSessionId = useCallback(
+    (sid: string | null) => {
+      setSelectedSessionIdState(sid)
+      try {
+        if (sid) window.localStorage.setItem(sessionStorageKey, sid)
+        else window.localStorage.removeItem(sessionStorageKey)
+      } catch {
+        // localStorage disabled — in-memory only is fine.
+      }
+    },
+    [sessionStorageKey],
+  )
 
   const handleLoad = useCallback(async () => initialScene, [initialScene])
 
@@ -216,7 +242,7 @@ export function AgentWorkspace({ initialScene, meta }: Props) {
                   projectId={project.id}
                   sceneId={meta.id}
                   selectedId={selectedSessionId}
-                  onSelect={(sid) => setSelectedSessionId(sid || null)}
+                  onSelect={setSelectedSessionId}
                 />
               )}
             </div>

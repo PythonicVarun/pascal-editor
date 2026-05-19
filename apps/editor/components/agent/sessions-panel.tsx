@@ -1,7 +1,7 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Bot, Plus, Trash2, Loader2 } from 'lucide-react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { Bot, Plus, Trash2, Loader2, RefreshCw, WifiOff } from 'lucide-react'
 import {
   AGENT_KINDS,
   type AgentKind,
@@ -25,7 +25,7 @@ interface Props {
   projectId: string
   sceneId: string
   selectedId: string | null
-  onSelect: (sessionId: string) => void
+  onSelect: (sessionId: string | null) => void
 }
 
 export function SessionsPanel({ projectId, sceneId, selectedId, onSelect }: Props) {
@@ -33,21 +33,57 @@ export function SessionsPanel({ projectId, sceneId, selectedId, onSelect }: Prop
   const [error, setError] = useState<string | null>(null)
   const [creating, setCreating] = useState(false)
   const [newAgent, setNewAgent] = useState<AgentKind>('claude')
+  const [reachable, setReachable] = useState(true)
+  const [loadedOnce, setLoadedOnce] = useState(false)
+  // Keep the latest selection visible to the reconciliation effect without
+  // restarting the polling loop every time the selection changes.
+  const selectedRef = useRef(selectedId)
+  selectedRef.current = selectedId
 
   const refresh = useCallback(async () => {
     try {
-      setSessions(await listSessions(projectId))
+      const next = await listSessions(projectId)
+      setSessions(next)
       setError(null)
+      setReachable(true)
+      setLoadedOnce(true)
+
+      // Drop stale selection if the session no longer exists server-side.
+      const current = selectedRef.current
+      if (current && !next.some((s) => s.id === current)) {
+        onSelect(null)
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err))
+      setReachable(false)
     }
-  }, [projectId])
+  }, [projectId, onSelect])
 
   useEffect(() => {
     void refresh()
     const id = window.setInterval(refresh, 4000)
     return () => window.clearInterval(id)
   }, [refresh])
+
+  // Auto-select the most recent session once on first load when nothing is
+  // already selected (e.g. fresh browser, no localStorage entry).
+  const autoSelectedRef = useRef(false)
+  useEffect(() => {
+    if (autoSelectedRef.current) return
+    if (!loadedOnce) return
+    if (selectedRef.current) {
+      autoSelectedRef.current = true
+      return
+    }
+    if (sessions.length === 0) return
+    const newest = sessions
+      .slice()
+      .sort((a, b) => b.createdAt.localeCompare(a.createdAt))[0]
+    if (newest) {
+      autoSelectedRef.current = true
+      onSelect(newest.id)
+    }
+  }, [loadedOnce, sessions, onSelect])
 
   const handleCreate = async () => {
     setCreating(true)
@@ -70,7 +106,7 @@ export function SessionsPanel({ projectId, sceneId, selectedId, onSelect }: Prop
   const handleDelete = async (sid: string) => {
     try {
       await deleteSession(projectId, sid)
-      if (selectedId === sid) onSelect('')
+      if (selectedId === sid) onSelect(null)
       await refresh()
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err))
@@ -113,8 +149,29 @@ export function SessionsPanel({ projectId, sceneId, selectedId, onSelect }: Prop
       </div>
 
       {error ? (
-        <div className="m-3 rounded-md border border-destructive/30 bg-destructive/10 px-3 py-1.5 text-destructive text-xs">
-          {error}
+        <div
+          className={cn(
+            'm-3 flex items-start gap-2 rounded-md border px-3 py-2 text-xs',
+            reachable
+              ? 'border-destructive/30 bg-destructive/10 text-destructive'
+              : 'border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-300',
+          )}
+        >
+          {reachable ? null : <WifiOff className="mt-0.5 h-3 w-3 flex-shrink-0" />}
+          <div className="flex-1">
+            <p className="font-medium">
+              {reachable ? 'Agent runner error' : "Can't reach the agent runner"}
+            </p>
+            <p className="mt-0.5 opacity-80">{error}</p>
+          </div>
+          <button
+            type="button"
+            onClick={() => void refresh()}
+            className="flex flex-shrink-0 items-center gap-1 rounded-md border border-current/30 px-1.5 py-0.5 font-medium hover:bg-current/10"
+            aria-label="Retry"
+          >
+            <RefreshCw className="h-3 w-3" /> Retry
+          </button>
         </div>
       ) : null}
 
