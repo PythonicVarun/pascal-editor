@@ -1,307 +1,102 @@
-'use client'
+import { headers } from 'next/headers'
+import Link from 'next/link'
+import { ArrowRight, Bot } from 'lucide-react'
+import { CreateAgentSceneButton } from '@/components/agent/create-agent-scene-button'
+import type { SceneMeta } from '@/components/scene-loader'
 
-import { useState } from 'react'
-import { Editor, ItemsPanel } from '@pascal-app/editor'
-import { Layers, Package, Settings, Play, Eraser, GripVertical } from 'lucide-react'
-import EditorMonaco from '@monaco-editor/react'
-import { useScene } from '@pascal-app/core'
-import { Panel, Group, Separator } from 'react-resizable-panels'
-import {
-  CommunityViewerToolbarLeft,
-  CommunityViewerToolbarRight,
-} from '@/components/viewer-toolbar'
+export const dynamic = 'force-dynamic'
 
-const SIDEBAR_TABS = [
-  { id: 'site', label: 'Scene', component: () => null, mobileDefaultSnap: 0.5, mobileIcon: <Layers className="h-5 w-5" /> },
-  { id: 'items', label: 'Items', component: ItemsPanel, mobileDefaultSnap: 0.5, mobileIcon: <Package className="h-5 w-5" /> },
-  { id: 'settings', label: 'Settings', component: () => null, mobileDefaultSnap: 0.5, mobileIcon: <Settings className="h-5 w-5" /> },
-]
-
-const DEFAULT_CODE = `// Live Agent Code Editor
-const { createNodes, nodes } = sceneAPI;
-
-// Find the first level
-const levelId = Object.values(nodes).find(n => n.type === 'level')?.id;
-
-if (!levelId) {
-  console.log("No level found!");
-} else {
-  const houseSize = 8;
-  const wallHeight = 3;
-  const wallThickness = 0.2;
-  
-  // Generate IDs with underscores per schema requirements
-  const slabId = 'slab_' + Math.random().toString(36).slice(2, 8);
-  const wallIds = [1, 2, 3, 4].map(i => 'wall_' + Math.random().toString(36).slice(2, i+8));
-  const doorId = 'door_' + Math.random().toString(36).slice(2, 8);
-  const windowIds = [1, 2, 3].map(i => 'window_' + Math.random().toString(36).slice(2, i+8));
-  const roofId = 'roof_' + Math.random().toString(36).slice(2, 8);
-  const rsegId = 'rseg_' + Math.random().toString(36).slice(2, 8);
-
-  const ops = [];
-
-  // Slab (Floor)
-  ops.push({
-    node: {
-      id: slabId,
-      type: 'slab',
-      polygon: [
-        [0, 0], [houseSize, 0], [houseSize, houseSize], [0, houseSize]
-      ],
-      holes: [],
-      holeMetadata: [],
-      elevation: 0.05,
-      autoFromWalls: false,
-      visible: true,
-      metadata: {}
-    },
-    parentId: levelId
-  });
-
-  // External Walls
-  const wallCoords = [
-    { start: [0, 0], end: [houseSize, 0] },
-    { start: [houseSize, 0], end: [houseSize, houseSize] },
-    { start: [houseSize, houseSize], end: [0, houseSize] },
-    { start: [0, houseSize], end: [0, 0] }
-  ];
-
-  wallCoords.forEach((coords, i) => {
-    ops.push({
-      node: {
-        id: wallIds[i],
-        type: 'wall',
-        start: coords.start,
-        end: coords.end,
-        height: wallHeight,
-        thickness: wallThickness,
-        children: i === 0 ? [doorId] : [windowIds[i - 1]],
-        visible: true,
-        metadata: {}
-      },
-      parentId: levelId
-    });
-  });
-
-  // Front Door (on Wall 1)
-  ops.push({
-    node: {
-      id: doorId,
-      type: 'door',
-      wallId: wallIds[0],
-      position: [houseSize / 2, wallHeight / 2, 0],
-      rotation: [0, 0, 0],
-      width: 1.0,
-      height: 2.1,
-      doorCategory: 'interior',
-      doorType: 'hinged',
-      leafCount: 1,
-      operationState: 0,
-      slideDirection: 'left',
-      trackStyle: 'none',
-      garagePanelCount: 4,
-      openingKind: 'door',
-      openingShape: 'rectangle',
-      openingRadiusMode: 'all',
-      openingTopRadii: [0.15, 0.15],
-      cornerRadius: 0.15,
-      archHeight: 0.45,
-      openingRevealRadius: 0.025,
-      frameThickness: 0.05,
-      frameDepth: 0.07,
-      threshold: true,
-      thresholdHeight: 0.02,
-      hingesSide: 'left',
-      swingDirection: 'inward',
-      swingAngle: 0,
-      handle: true,
-      handleHeight: 1.05,
-      handleSide: 'right',
-      doorCloser: false,
-      panicBar: false,
-      panicBarHeight: 1.0,
-      contentPadding: [0.04, 0.04],
-      segments: [
-        {
-          type: 'panel',
-          heightRatio: 0.4,
-          columnRatios: [1],
-          dividerThickness: 0.03,
-          panelDepth: 0.01,
-          panelInset: 0.04,
-        },
-        {
-          type: 'panel',
-          heightRatio: 0.6,
-          columnRatios: [1],
-          dividerThickness: 0.03,
-          panelDepth: 0.01,
-          panelInset: 0.04,
-        }
-      ],
-      visible: true,
-      metadata: {}
-    },
-    parentId: wallIds[0]
-  });
-
-  // Windows (on Walls 2, 3, 4)
-  [1, 2, 3].forEach(i => {
-    ops.push({
-      node: {
-        id: windowIds[i-1],
-        type: 'window',
-        wallId: wallIds[i],
-        position: [houseSize / 2, 1.5, 0],
-        rotation: [0, 0, 0],
-        width: 1.2,
-        height: 1.2,
-        openingKind: 'window',
-        windowType: 'fixed',
-        operationState: 0,
-        awningDirection: 'up',
-        casementStyle: 'single',
-        hingesSide: 'left',
-        openingShape: 'rectangle',
-        openingRadiusMode: 'all',
-        openingCornerRadii: [0.15, 0.15, 0.15, 0.15],
-        cornerRadius: 0.15,
-        archHeight: 0.35,
-        openingRevealRadius: 0.025,
-        frameThickness: 0.05,
-        frameDepth: 0.07,
-        columnRatios: [1],
-        rowRatios: [1],
-        columnDividerThickness: 0.03,
-        rowDividerThickness: 0.03,
-        sill: true,
-        sillDepth: 0.08,
-        sillThickness: 0.03,
-        visible: true,
-        metadata: {}
-      },
-      parentId: wallIds[i]
-    });
-  });
-
-  // Roof
-  ops.push({
-    node: {
-      id: roofId,
-      type: 'roof',
-      position: [houseSize / 2, wallHeight, houseSize / 2],
-      rotation: 0,
-      children: [rsegId],
-      visible: true,
-      metadata: {}
-    },
-    parentId: levelId
-  });
-
-  ops.push({
-    node: {
-      id: rsegId,
-      type: 'roof-segment',
-      roofType: 'gable',
-      position: [0, 0, 0],
-      rotation: 0,
-      width: houseSize + 1,
-      depth: houseSize + 1,
-      wallHeight: 0.2,
-      roofHeight: 2.5,
-      wallThickness: 0.1,
-      deckThickness: 0.1,
-      overhang: 0.3,
-      shingleThickness: 0.05,
-      visible: true,
-      metadata: {}
-    },
-    parentId: roofId
-  });
-
-  createNodes(ops);
-  console.log("Complete house built!");
+async function resolveBaseUrl(): Promise<string> {
+  if (process.env.NEXT_PUBLIC_APP_URL) return process.env.NEXT_PUBLIC_APP_URL
+  const h = await headers()
+  const host = h.get('x-forwarded-host') ?? h.get('host')
+  const proto = h.get('x-forwarded-proto') ?? 'http'
+  if (!host) return 'http://localhost:3000'
+  return `${proto}://${host}`
 }
-`
 
-export default function AgentPage() {
-  const [code, setCode] = useState(DEFAULT_CODE)
+async function fetchScenes(): Promise<SceneMeta[]> {
+  const base = await resolveBaseUrl()
+  const response = await fetch(`${base}/api/scenes?limit=50`, { cache: 'no-store' })
+  if (!response.ok) return []
+  const payload = (await response.json()) as { scenes?: SceneMeta[] } | SceneMeta[]
+  if (Array.isArray(payload)) return payload
+  return payload.scenes ?? []
+}
 
-  const handleRunCode = () => {
-    try {
-      const sceneAPI = useScene.getState()
-      // Evaluate the code with sceneAPI in scope
-      const fn = new Function('sceneAPI', code)
-      fn(sceneAPI)
-    } catch (err) {
-      console.error("Agent Code Error:", err)
-      alert(`Error executing code: ${err}`)
-    }
+function formatDate(iso: string): string {
+  try {
+    return new Date(iso).toLocaleString()
+  } catch {
+    return iso
   }
+}
 
-  const handleClearCode = () => {
-    setCode('')
-  }
+export default async function AgentEntryPage() {
+  const scenes = await fetchScenes()
 
   return (
-    <div className="h-screen w-screen bg-background overflow-hidden">
-      <Group orientation="horizontal">
-        {/* LEFT PANEL - Agent / Code */}
-        <Panel defaultSize={30} minSize={20} className="flex flex-col z-50 bg-background shadow-xl">
-          <div className="p-4 border-b border-border flex items-center justify-between">
-            <div>
-              <h1 className="font-semibold text-foreground">Agent Workspace</h1>
-              <p className="text-xs text-muted-foreground">Edit buildings live with code</p>
-            </div>
-            <div className="flex items-center gap-2">
-              <button 
-                onClick={handleClearCode}
-                className="flex items-center gap-1.5 border border-border text-foreground px-3 py-1.5 rounded-md text-xs font-medium hover:bg-muted transition-colors"
-              >
-                <Eraser className="w-3 h-3" /> Clear
-              </button>
-              <button 
-                onClick={handleRunCode}
-                className="flex items-center gap-1.5 bg-primary text-primary-foreground px-3 py-1.5 rounded-md text-xs font-medium hover:bg-primary/90 transition-colors"
-              >
-                <Play className="w-3 h-3" /> Execute
-              </button>
-            </div>
-          </div>
-          <div className="flex-1 relative">
-            <EditorMonaco
-              height="100%"
-              language="javascript"
-              theme="vs-dark"
-              value={code}
-              onChange={(val) => setCode(val || '')}
-              options={{
-                minimap: { enabled: false },
-                fontSize: 13,
-                fontFamily: "var(--font-geist-mono), monospace",
-                wordWrap: "on"
-              }}
-            />
-          </div>
-        </Panel>
+    <div className="min-h-screen bg-background">
+      <header className="sticky top-0 z-10 border-border border-b bg-background/95 backdrop-blur">
+        <div className="container mx-auto flex items-center justify-between gap-4 px-6 py-4">
+          <nav className="flex items-center gap-4 text-sm">
+            <Link
+              className="text-muted-foreground transition-colors hover:text-foreground"
+              href="/"
+            >
+              Home
+            </Link>
+            <span className="text-muted-foreground">/</span>
+            <span className="font-medium text-foreground">Agent mode</span>
+          </nav>
+          <CreateAgentSceneButton />
+        </div>
+      </header>
 
-        <Separator className="w-2 bg-border/50 hover:bg-border/80 transition-colors flex items-center justify-center cursor-col-resize z-50 group">
-          <div className="w-1 h-8 rounded-full bg-border group-hover:bg-primary/50 transition-colors flex items-center justify-center">
-             <GripVertical className="w-3 h-3 text-muted-foreground scale-0 group-hover:scale-100 transition-transform" />
+      <main className="container mx-auto max-w-3xl px-6 py-12">
+        <div className="mb-10">
+          <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-border bg-muted/40 px-3 py-1 font-medium text-muted-foreground text-xs">
+            <Bot className="h-3 w-3" /> Experimental
           </div>
-        </Separator>
-        
-        {/* RIGHT PANEL - Pascal Editor */}
-        <Panel defaultSize={70} className="relative h-full">
-          <Editor
-            layoutVersion="v2"
-            projectId="agent-workspace"
-            sidebarTabs={SIDEBAR_TABS}
-            viewerToolbarLeft={<CommunityViewerToolbarLeft />}
-            viewerToolbarRight={<CommunityViewerToolbarRight />}
-          />
-        </Panel>
-      </Group>
+          <h1 className="mb-2 font-bold text-3xl">Agent mode</h1>
+          <p className="text-muted-foreground text-sm">
+            Spin up Claude Code, Codex, Gemini CLI, or Copilot CLI inside a sandboxed container —
+            give it Pascal MCP tools, then watch it edit the scene live in the 3D viewer.
+          </p>
+        </div>
+
+        <h2 className="mb-3 font-semibold text-foreground text-sm">Open a scene in agent mode</h2>
+        {scenes.length === 0 ? (
+          <div className="rounded-xl border border-border/60 border-dashed bg-background p-10 text-center">
+            <p className="text-muted-foreground text-sm">No saved scenes yet.</p>
+            <p className="mt-1 text-muted-foreground text-xs">
+              Create a new scene to attach an agent to.
+            </p>
+            <div className="mt-4 flex justify-center">
+              <CreateAgentSceneButton />
+            </div>
+          </div>
+        ) : (
+          <ul className="space-y-2">
+            {scenes.map((s) => (
+              <li key={s.id}>
+                <Link
+                  href={`/agent/${s.id}`}
+                  className="group flex items-center justify-between rounded-md border border-border/60 bg-background px-4 py-3 transition-colors hover:border-border hover:bg-accent/30"
+                >
+                  <div className="min-w-0">
+                    <p className="truncate font-medium text-foreground text-sm">{s.name}</p>
+                    <p className="mt-0.5 text-muted-foreground text-xs">
+                      {s.nodeCount} nodes · updated {formatDate(s.updatedAt)}
+                    </p>
+                  </div>
+                  <ArrowRight className="h-4 w-4 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-foreground" />
+                </Link>
+              </li>
+            ))}
+          </ul>
+        )}
+      </main>
     </div>
   )
 }
