@@ -1,6 +1,7 @@
 import { headers } from 'next/headers'
 import Link from 'next/link'
 import { CreateSceneButton } from '@/components/save-button'
+import { ScenesList } from '@/components/scenes-list'
 import type { SceneMeta } from '@/components/scene-loader'
 
 export const dynamic = 'force-dynamic'
@@ -31,14 +32,6 @@ async function fetchScenes(): Promise<SceneMeta[]> {
     return payload
   }
   return payload.scenes ?? []
-}
-
-function formatDate(iso: string): string {
-  try {
-    return new Date(iso).toLocaleString()
-  } catch {
-    return iso
-  }
 }
 
 export default async function ScenesPage() {
@@ -78,38 +71,7 @@ export default async function ScenesPage() {
             </div>
           </div>
         ) : (
-          <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {scenes.map((scene) => (
-              <li key={scene.id}>
-                <Link
-                  className="group block rounded-xl border border-border/60 bg-background p-4 transition-colors hover:border-border hover:bg-accent/30"
-                  href={`/scene/${scene.id}`}
-                >
-                  <div className="flex aspect-video items-center justify-center overflow-hidden rounded-lg bg-accent/30">
-                    {scene.thumbnailUrl ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
-                        alt={scene.name}
-                        className="h-full w-full object-cover"
-                        src={scene.thumbnailUrl}
-                      />
-                    ) : (
-                      <span className="text-muted-foreground text-xs">No thumbnail</span>
-                    )}
-                  </div>
-                  <div className="mt-3">
-                    <h2 className="truncate font-semibold text-sm group-hover:text-foreground">
-                      {scene.name}
-                    </h2>
-                    <div className="mt-1 flex items-center justify-between text-muted-foreground text-xs">
-                      <span>{scene.nodeCount} nodes</span>
-                      <time dateTime={scene.updatedAt}>{formatDate(scene.updatedAt)}</time>
-                    </div>
-                  </div>
-                </Link>
-              </li>
-            ))}
-          </ul>
+          <ScenesList scenes={scenes} />
         )}
       </main>
     </div>

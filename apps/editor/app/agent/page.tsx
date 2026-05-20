@@ -2,6 +2,7 @@ import { headers } from 'next/headers'
 import Link from 'next/link'
 import { ArrowRight, Bot } from 'lucide-react'
 import { CreateAgentSceneButton } from '@/components/agent/create-agent-scene-button'
+import { AgentScenesList } from '@/components/agent/agent-scenes-list'
 import type { SceneMeta } from '@/components/scene-loader'
 
 export const dynamic = 'force-dynamic'
@@ -22,14 +23,6 @@ async function fetchScenes(): Promise<SceneMeta[]> {
   const payload = (await response.json()) as { scenes?: SceneMeta[] } | SceneMeta[]
   if (Array.isArray(payload)) return payload
   return payload.scenes ?? []
-}
-
-function formatDate(iso: string): string {
-  try {
-    return new Date(iso).toLocaleString()
-  } catch {
-    return iso
-  }
 }
 
 export default async function AgentEntryPage() {
@@ -77,24 +70,7 @@ export default async function AgentEntryPage() {
             </div>
           </div>
         ) : (
-          <ul className="space-y-2">
-            {scenes.map((s) => (
-              <li key={s.id}>
-                <Link
-                  href={`/agent/${s.id}`}
-                  className="group flex items-center justify-between rounded-md border border-border/60 bg-background px-4 py-3 transition-colors hover:border-border hover:bg-accent/30"
-                >
-                  <div className="min-w-0">
-                    <p className="truncate font-medium text-foreground text-sm">{s.name}</p>
-                    <p className="mt-0.5 text-muted-foreground text-xs">
-                      {s.nodeCount} nodes · updated {formatDate(s.updatedAt)}
-                    </p>
-                  </div>
-                  <ArrowRight className="h-4 w-4 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-foreground" />
-                </Link>
-              </li>
-            ))}
-          </ul>
+          <AgentScenesList scenes={scenes} />
         )}
       </main>
     </div>

@@ -76,6 +76,17 @@ export async function createProject(name: string): Promise<Project> {
   return jsonOrThrow<Project>(res)
 }
 
+export async function deleteProject(id: string, removeFiles: boolean): Promise<void> {
+  const res = await fetch(
+    `${AGENT_RUNNER_URL}/api/projects/${id}?removeFiles=${removeFiles}`,
+    { method: 'DELETE' },
+  )
+  if (!res.ok && res.status !== 204) {
+    const body = (await res.json().catch(() => null)) as { error?: string } | null
+    throw new Error(body?.error ?? `agent-runner ${res.status}`)
+  }
+}
+
 /** Get-or-create the shared Pascal project the agent page operates on. */
 export async function ensurePascalProject(): Promise<Project> {
   const projects = await listProjects()
