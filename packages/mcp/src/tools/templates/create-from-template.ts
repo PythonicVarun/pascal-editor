@@ -6,7 +6,7 @@ import { rehydrateSiteChildren } from '../../lib/rehydrate-site-children'
 import type { SceneOperations } from '../../operations'
 import { isTemplateId, TEMPLATES, type TemplateId } from '../../templates'
 import { ErrorCode, throwMcpError } from '../errors'
-import { appendLiveSceneEvent } from '../live-sync'
+import { appendLiveSceneEvent, publishLiveSceneSnapshot } from '../live-sync'
 import { currentLevelContext, sceneMetaPayload } from '../scene-lifecycle/metadata'
 
 export const createFromTemplateInput = {
@@ -109,7 +109,16 @@ export function registerCreateFromTemplate(server: McpServer, bridge: SceneOpera
       }
 
       if (!save) {
-        bridge.clearActiveScene()
+        // If the MCP session is already bound to an editor scene (typical
+        // when the agent container was launched with PASCAL_SCENE_ID), keep
+        // that binding and publish the templated graph as a snapshot so the
+        // viewer's SSE stream reflects the change. Without this, save:false
+        // would silently drop subsequent mutations on the floor.
+        if (bridge.getActiveScene()) {
+          await publishLiveSceneSnapshot(bridge, 'create_from_template')
+        } else {
+          bridge.clearActiveScene()
+        }
         return {
           content: [{ type: 'text' as const, text: JSON.stringify(basePayload) }],
           structuredContent: basePayload,

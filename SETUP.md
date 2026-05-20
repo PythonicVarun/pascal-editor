@@ -44,7 +44,8 @@ The editor works fully without any environment variables.
 
 | Command | Description |
 |---------|-------------|
-| `bun dev` | Start the development server |
+| `bun dev` | Start the editor dev server only (http://localhost:3002) |
+| `bun dev:all` | Start the editor + agent-runner together (one terminal, Ctrl-C kills both). Builds `pascal-agent:latest` on first run if missing. |
 | `bun build` | Build all packages |
 | `bun check` | Lint and format check (Biome) |
 | `bun check:fix` | Auto-fix lint and format issues |

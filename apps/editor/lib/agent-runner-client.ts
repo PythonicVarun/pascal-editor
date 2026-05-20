@@ -159,7 +159,7 @@ export function ttydUrl(sessionId: string): string {
 /**
  * Build a Pascal session create-payload: per-project strategy (so
  * ~/.claude etc. persist across sessions), PASCAL_SCENE_ID set so the
- * agent's PASCAL.md hint file points at the right scene, plus the
+ * agent's AGENTS.md hint file points at the right scene, plus the
  * SQLite bind mount.
  */
 export function buildPascalSessionInput(args: {
@@ -175,7 +175,7 @@ export function buildPascalSessionInput(args: {
     // works on Codespaces and Docker Desktop; override via NEXT_PUBLIC_*
     // for bare-Linux Docker behind a non-standard hostname.
     PASCAL_EDITOR_URL:
-      process.env.NEXT_PUBLIC_PASCAL_EDITOR_URL?.trim() || 'http://host.docker.internal:3000',
+      process.env.NEXT_PUBLIC_PASCAL_EDITOR_URL?.trim() || 'http://host.docker.internal:3002',
   }
   const extraMounts =
     PASCAL_DATA_DIR_HOST.length > 0

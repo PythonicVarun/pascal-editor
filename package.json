@@ -4,6 +4,7 @@
   "scripts": {
     "build": "turbo run build",
     "dev": "set -a && . ./.env 2>/dev/null; set +a; turbo run dev --env-mode=loose",
+    "dev:all": "bash scripts/dev-all.sh",
     "lint": "biome lint",
     "lint:fix": "biome lint --write",
     "format": "biome format --write",

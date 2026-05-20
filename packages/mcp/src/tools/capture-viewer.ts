@@ -52,7 +52,7 @@ export function registerCaptureViewer(server: McpServer): void {
           'PASCAL_SCENE_ID is not set; capture_viewer requires a scene context.',
         )
       }
-      const editorUrl = (process.env.PASCAL_EDITOR_URL ?? 'http://host.docker.internal:3000').replace(
+      const editorUrl = (process.env.PASCAL_EDITOR_URL ?? 'http://host.docker.internal:3002').replace(
         /\/+$/,
         '',
       )
@@ -79,7 +79,7 @@ export function registerCaptureViewer(server: McpServer): void {
         const message = err instanceof Error ? err.message : String(err)
         throwMcpError(
           ErrorCode.InternalError,
-          `Unable to reach editor at ${editorUrl}: ${message}. Set PASCAL_EDITOR_URL if the editor is not at the default host.docker.internal:3000.`,
+          `Unable to reach editor at ${editorUrl}: ${message}. Set PASCAL_EDITOR_URL if the editor is not at the default host.docker.internal:3002.`,
         )
       }
 

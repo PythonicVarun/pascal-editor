@@ -6,6 +6,7 @@ import { readFileSync } from 'node:fs'
 import { parseArgs } from 'node:util'
 import { SceneBridge } from '../bridge/scene-bridge'
 import { version } from '../index'
+import { createSceneOperations } from '../operations'
 import { createPascalMcpServer } from '../server'
 import { createSceneStore } from '../storage'
 import { connectHttp } from '../transports/http'
@@ -62,7 +63,35 @@ async function main(): Promise<void> {
   }
 
   const store = await createSceneStore()
-  const server = createPascalMcpServer({ bridge, store })
+  const operations = createSceneOperations({ bridge, store })
+
+  // When the agent container was launched with PASCAL_SCENE_ID, bind the
+  // bridge to that scene up-front. Without this the agent has to call
+  // `load_scene` first, and any mutation tool that fires before that call
+  // is a silent no-op as far as the editor SSE stream is concerned (live
+  // sync skips publishing when no active scene is set, see live-sync.ts).
+  const sceneIdEnv = process.env.PASCAL_SCENE_ID?.trim()
+  if (sceneIdEnv) {
+    try {
+      const scene = await operations.loadStoredScene(sceneIdEnv)
+      if (scene) {
+        bridge.loadJSON(scene.graph)
+        bridge.setActiveScene(scene)
+        console.error(
+          `[pascal-mcp] bound to PASCAL_SCENE_ID=${sceneIdEnv} (v${scene.version})`,
+        )
+      } else {
+        console.error(
+          `[pascal-mcp] WARNING: PASCAL_SCENE_ID=${sceneIdEnv} not found in store; bridge starts unbound`,
+        )
+      }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err)
+      console.error(`[pascal-mcp] WARNING: failed to load PASCAL_SCENE_ID=${sceneIdEnv}: ${msg}`)
+    }
+  }
+
+  const server = createPascalMcpServer({ bridge, store, operations })
 
   if (values.http) {
     const portNum = Number.parseInt(values.port ?? '3917', 10)
