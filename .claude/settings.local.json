@@ -1,0 +1,18 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "Bash(gh api *)",
+      "Bash(git -C /workspaces/pascal-editor remote -v)",
+      "Bash(git -C /workspaces/pascal-editor status --short)",
+      "Bash(git submodule *)",
+      "Bash(bunx --bun tsc --noEmit --project tsconfig.json)",
+      "Bash(git -C /workspaces/pascal-editor status)",
+      "Bash(git -C /workspaces/pascal-editor diff --stat)",
+      "Bash(npm view *)",
+      "Bash(rm -f apps/editor/lib/agent-runner-client.ts apps/editor/components/agent/api-keys-dialog.tsx services/agent-runner/server/src/store/keys.ts services/agent-runner/server/src/routes/keys.ts)",
+      "Bash(rmdir apps/editor/components/agent)"
+    ]
+  }
+}
